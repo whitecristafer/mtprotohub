@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MTProto Hub</string>
+    <string name="title_settings">Настройки</string>
+    <string name="title_proxies">Список прокси</string>
+    <string name="title_help">Помощь</string>
+    <string name="title_logs">Журнал</string>
+    <string name="title_test_conn">Тест локального шлюза</string>
+    <string name="title_clients">Подключено клиентов</string>
+    
+    <string name="btn_start">Запустить</string>
+    <string name="btn_stop">Остановить</string>
+    <string name="btn_fetch">Обновить список</string>
+    
+    <!-- We will use these if we do full stringResource pass, but for now we'll just have the user see these if Android detects we set them up -->
+</resources>
