@@ -67,6 +67,7 @@ fun HomeScreen(
     val isPaused by LocalProxyState.isPaused.collectAsStateWithLifecycle()
     val current = topWorking.firstOrNull()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+
     Scaffold(
         topBar = {
             TopAppBar(
