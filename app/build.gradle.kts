@@ -1,3 +1,12 @@
+import java.util.Properties
+import java.io.FileInputStream
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+
+if (keystorePropertiesFile.exists()) {
+  keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
@@ -6,6 +15,7 @@ plugins {
   alias(libs.plugins.secrets)
   alias(libs.plugins.kotlin.serialization)
 }
+
 
 android {
   namespace = "com.mtphub"
@@ -16,18 +26,17 @@ android {
     minSdk = 24
     targetSdk = 36
     versionCode = 1
-    versionName = "1.1.1 "
+    versionName = "1.1.1"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+      storeFile = file(keystoreProperties["storeFile"] as String)
+      storePassword = keystoreProperties["storePassword"] as String
+      keyAlias = keystoreProperties["keyAlias"] as String
+      keyPassword = keystoreProperties["keyPassword"] as String
     }
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
