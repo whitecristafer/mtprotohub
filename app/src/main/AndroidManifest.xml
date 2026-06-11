@@ -22,7 +22,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MTProtoHub">
         
-        <service android:name=".service.LocalProxyService" android:foregroundServiceType="dataSync" android:exported="false"/>
+        <service android:name=".service.LocalProxyService" android:foregroundServiceType="dataSync" android:exported="false"
+            tools:ignore="ForegroundServicePermission" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -35,5 +36,8 @@
             </intent-filter>
         </activity>
     </application>
+    <queries>
+        <package android:name="org.telegram.messenger" />
+    </queries>
 
 </manifest>

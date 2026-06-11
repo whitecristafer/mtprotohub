@@ -3,6 +3,8 @@ package com.mtphub.ui.home
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -17,9 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mtphub.ui.AppViewModel
 import com.mtphub.service.LocalProxyState
+import com.mtphub.data.TelegramApp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -160,6 +164,32 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            val telegramInstalled = TelegramApp.isTelegramInstalled(context);
+            if (current != null && telegramInstalled) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Button(
+                        onClick = {
+                            val localUrl = "tg://proxy?server=127.0.0.1&port=${settings.localProxyPort}&secret=${current.secret}"
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(localUrl))
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Не удалось открыть Telegram", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(text = "Connect proxy in Telegram", fontSize = 14.sp)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                }
+            } else {
+                // NONE
+            }
             // Action Buttons
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 Button(
