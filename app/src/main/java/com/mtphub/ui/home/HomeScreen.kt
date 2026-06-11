@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Info
@@ -60,9 +62,11 @@ fun HomeScreen(
     val topWorking by viewModel.topWorkingProxies.collectAsStateWithLifecycle()
     val activeConnections by viewModel.activeConnections.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val scrollState = rememberScrollState()
     val isGatewayRunning by LocalProxyState.isRunning.collectAsStateWithLifecycle()
     val isPaused by LocalProxyState.isPaused.collectAsStateWithLifecycle()
-
+    val current = topWorking.firstOrNull()
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -82,16 +86,73 @@ fun HomeScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            val telegramInstalled = TelegramApp.isTelegramInstalled(context)
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (current != null && telegramInstalled) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = {
+                                val localUrl =
+                                    "tg://proxy?server=127.0.0.1&port=${settings.localProxyPort}&secret=${current.secret}"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(localUrl))
+                                runCatching { context.startActivity(intent) }
+                                    .onFailure {
+                                        Toast.makeText(
+                                            context,
+                                            "Failed to open Telegram",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(text = "Connect proxy in Telegram", fontSize = 14.sp)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Button(
+                        onClick = {
+                            if (isGatewayRunning) onStopService() else onStartService()
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(if (isGatewayRunning) "Stop" else "Start")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    FilledTonalButton(
+                        onClick = { viewModel.refreshList(force = false) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Check Pings")
+                    }
+                }
+            }
+
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            val settings by viewModel.settings.collectAsStateWithLifecycle()
+
             val sdf = java.text.SimpleDateFormat("dd MMM, HH:mm", java.util.Locale.getDefault())
             val lastUpdateStr = if (settings.lastRepoUpdate > 0) {
                 sdf.format(java.util.Date(settings.lastRepoUpdate))
@@ -157,7 +218,7 @@ fun HomeScreen(
                 }
             }
 
-            val current = topWorking.firstOrNull()
+
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Active MTProto Proxy", style = MaterialTheme.typography.titleMedium)
@@ -169,10 +230,13 @@ fun HomeScreen(
                         Text("Score: ${current.score}")
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(onClick = {
-                            val localUrl = "tg://proxy?server=127.0.0.1&port=${settings.localProxyPort}&secret=${current.secret}"
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val localUrl =
+                                "tg://proxy?server=127.0.0.1&port=${settings.localProxyPort}&secret=${current.secret}"
+                            val clipboard =
+                                context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             clipboard.setPrimaryClip(ClipData.newPlainText("MTProto", localUrl))
-                            Toast.makeText(context, "Copied local gateway link", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Copied local gateway link", Toast.LENGTH_SHORT)
+                                .show()
                         }) {
                             Text("Export Local Link")
                         }
@@ -184,49 +248,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            val telegramInstalled = TelegramApp.isTelegramInstalled(context)
-            if (current != null && telegramInstalled) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Button(
-                        onClick = {
-                            val localUrl = "tg://proxy?server=127.0.0.1&port=${settings.localProxyPort}&secret=${current.secret}"
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(localUrl))
-                            runCatching { context.startActivity(intent) }
-                                .onFailure {
-                                    Toast.makeText(context, "Failed to open Telegram", Toast.LENGTH_SHORT).show()
-                                }
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(text = "Connect proxy in Telegram", fontSize = 14.sp)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-            }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Button(
-                    onClick = {
-                        if (isGatewayRunning) onStopService() else onStartService()
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(if (isGatewayRunning) "Stop" else "Start")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                FilledTonalButton(
-                    onClick = { viewModel.refreshList(force = false) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Check Pings")
-                }
-            }
         }
     }
 }
