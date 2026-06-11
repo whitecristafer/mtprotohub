@@ -44,6 +44,32 @@ fun SettingsScreen(viewModel: AppViewModel, onBack: () -> Unit) {
                     }
                 }
             )
+        },
+        bottomBar = {
+            Column( modifier = Modifier
+                .padding (horizontal = 16.dp, vertical = 8.dp)
+            ) {
+            Button(
+                onClick = {
+                    viewModel.updateSettings(
+                        settings.copy(
+                            sourceUrl = sourceUrl,
+                            maxPingMs = maxPingMs.toIntOrNull() ?: 1000,
+                            poolSize = poolSize.toIntOrNull() ?: 20,
+                            parallelChecks = parallelChecks.toIntOrNull() ?: 50,
+                            updateIntervalHours = interval.toIntOrNull() ?: 12,
+                            localProxyPort = localPort.toIntOrNull() ?: 1080,
+                            autoSwitchProxies = autoSwitch,
+                            autoScanEnabled = autoScan
+                        )
+                    )
+                    onBack()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Save")
+            }
+        }
         }
     ) { padding ->
         Column(
@@ -118,29 +144,6 @@ fun SettingsScreen(viewModel: AppViewModel, onBack: () -> Unit) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    viewModel.updateSettings(
-                        settings.copy(
-                            sourceUrl = sourceUrl,
-                            maxPingMs = maxPingMs.toIntOrNull() ?: 1000,
-                            poolSize = poolSize.toIntOrNull() ?: 20,
-                            parallelChecks = parallelChecks.toIntOrNull() ?: 50,
-                            updateIntervalHours = interval.toIntOrNull() ?: 12,
-                            localProxyPort = localPort.toIntOrNull() ?: 1080,
-                            autoSwitchProxies = autoSwitch,
-                            autoScanEnabled = autoScan
-                        )
-                    )
-                    onBack()
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Save")
-            }
         }
     }
 }

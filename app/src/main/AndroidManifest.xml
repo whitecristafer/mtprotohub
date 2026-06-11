@@ -25,6 +25,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MTProtoHub">
 
+
+        <service
+            android:name=".service.ProxyTileService"
+            android:label="MTProto Hub"
+            android:icon="@drawable/ic_proxy_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
         <service
             android:name=".service.UpdateService"
             android:foregroundServiceType="dataSync"
