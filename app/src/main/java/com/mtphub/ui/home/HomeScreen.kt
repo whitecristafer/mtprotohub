@@ -6,14 +6,33 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -21,9 +40,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mtphub.ui.AppViewModel
-import com.mtphub.service.LocalProxyState
 import com.mtphub.data.TelegramApp
+import com.mtphub.service.LocalProxyState
+import com.mtphub.ui.AppViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,10 +57,8 @@ fun HomeScreen(
     onStartService: () -> Unit,
     onStopService: () -> Unit
 ) {
-    val proxies by viewModel.proxies.collectAsStateWithLifecycle()
     val topWorking by viewModel.topWorkingProxies.collectAsStateWithLifecycle()
     val activeConnections by viewModel.activeConnections.collectAsStateWithLifecycle()
-    
     val context = LocalContext.current
     val isGatewayRunning by LocalProxyState.isRunning.collectAsStateWithLifecycle()
     val isPaused by LocalProxyState.isPaused.collectAsStateWithLifecycle()
@@ -76,23 +93,29 @@ fun HomeScreen(
         ) {
             val settings by viewModel.settings.collectAsStateWithLifecycle()
             val sdf = java.text.SimpleDateFormat("dd MMM, HH:mm", java.util.Locale.getDefault())
-            val lastUpdateStr = if (settings.lastRepoUpdate > 0) sdf.format(java.util.Date(settings.lastRepoUpdate)) else "Never"
-            
+            val lastUpdateStr = if (settings.lastRepoUpdate > 0) {
+                sdf.format(java.util.Date(settings.lastRepoUpdate))
+            } else {
+                "Never"
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Last Update: $lastUpdateStr", style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = { viewModel.refreshList(force = true) }) {
+                androidx.compose.material3.TextButton(onClick = { viewModel.refreshList(force = true) }) {
                     Text("Fetch Now")
                 }
             }
-            
-            // Status Card
+
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text("Gateway Status", style = MaterialTheme.typography.titleMedium)
                         Text(
                             text = if (isPaused) "Paused" else if (isGatewayRunning) "Working" else "Stopped",
@@ -114,7 +137,6 @@ fun HomeScreen(
                 }
             }
 
-            // Connection Info
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Local Proxy Connection", style = MaterialTheme.typography.titleMedium)
@@ -135,7 +157,6 @@ fun HomeScreen(
                 }
             }
 
-            // Current Proxy Info
             val current = topWorking.firstOrNull()
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -150,8 +171,7 @@ fun HomeScreen(
                         Button(onClick = {
                             val localUrl = "tg://proxy?server=127.0.0.1&port=${settings.localProxyPort}&secret=${current.secret}"
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText("MTProto", localUrl)
-                            clipboard.setPrimaryClip(clip)
+                            clipboard.setPrimaryClip(ClipData.newPlainText("MTProto", localUrl))
                             Toast.makeText(context, "Copied local gateway link", Toast.LENGTH_SHORT).show()
                         }) {
                             Text("Export Local Link")
@@ -164,7 +184,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            val telegramInstalled = TelegramApp.isTelegramInstalled(context);
+            val telegramInstalled = TelegramApp.isTelegramInstalled(context)
             if (current != null && telegramInstalled) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -174,31 +194,26 @@ fun HomeScreen(
                         onClick = {
                             val localUrl = "tg://proxy?server=127.0.0.1&port=${settings.localProxyPort}&secret=${current.secret}"
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(localUrl))
-                            try {
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "Не удалось открыть Telegram", Toast.LENGTH_SHORT).show()
-                            }
+                            runCatching { context.startActivity(intent) }
+                                .onFailure {
+                                    Toast.makeText(context, "Failed to open Telegram", Toast.LENGTH_SHORT).show()
+                                }
                         },
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(text = "Connect proxy in Telegram", fontSize = 14.sp)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-
                 }
-            } else {
-                // NONE
             }
-            // Action Buttons
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
                 Button(
                     onClick = {
-                        if (isGatewayRunning) {
-                            onStopService()
-                        } else {
-                            onStartService()
-                        }
+                        if (isGatewayRunning) onStopService() else onStartService()
                     },
                     modifier = Modifier.weight(1f)
                 ) {
