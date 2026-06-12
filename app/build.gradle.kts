@@ -26,7 +26,7 @@ android {
     minSdk = 24
     targetSdk = 36
     versionCode = 1
-    versionName = "1.2.1"
+    versionName = "1.2.3"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -131,4 +131,5 @@ dependencies {
   implementation(libs.okhttp.v4120)
   implementation(libs.gson)
   implementation(libs.kotlinx.coroutines.android.v173)
+  implementation(libs.androidx.material.icons.extended)
 }

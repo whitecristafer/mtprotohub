@@ -21,6 +21,7 @@ import timber.log.Timber
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
+import java.net.SocketException
 
 class LocalProxyService : Service() {
 
@@ -105,8 +106,11 @@ class LocalProxyService : Service() {
                 return@launch
             }
 
+            LocalProxyState.setCurrentProxy(currentProxy)
             updateNotification("Connected to: ${currentProxy?.server} (${currentProxy?.latency}ms)")
             Timber.i("Starting relay for proxy ${currentProxy?.server}:${currentProxy?.port}")
+            val currentProxyRef = currentProxy ?: return@launch
+
 
             try {
                 var portToUse = settings.localProxyPort
@@ -129,12 +133,20 @@ class LocalProxyService : Service() {
                 }
 
                 while (isActive && !LocalProxyState.isPaused.value) {
-                    val clientSocket = serverSocket?.accept() ?: break
+                    val clientSocket = try {
+                        serverSocket?.accept() ?: break
+                    } catch (e: SocketException) {
+                        Timber.d("ServerSocket closed, exiting accept loop")
+                        break
+                    } catch (e: Exception) {
+                        Timber.e(e, "Accept error")
+                        delay(500)
+                        continue
+                    }
                     serviceScope.launch(Dispatchers.IO) {
                         val ip = clientSocket.inetAddress?.hostAddress ?: "Unknown"
                         val clientConn = LocalProxyState.addClient(ip)
-                        // Passing the local key to the handler
-                        handleClient(clientSocket, currentProxy!!, localSecret)
+                        handleClient(clientSocket, currentProxyRef, localSecret)
                         LocalProxyState.removeClient(clientConn)
                     }
                 }
@@ -145,8 +157,11 @@ class LocalProxyService : Service() {
                 }
             } finally {
                 if (!LocalProxyState.isPaused.value) {
-                    LocalProxyState.isRunning.value = false
+                    LocalProxyState.setRunning(false)
+                    LocalProxyState.setCurrentProxy(null)
                 }
+                serverSocket?.close()
+                serverSocket = null
             }
         }
     }
@@ -252,7 +267,8 @@ class LocalProxyService : Service() {
             // Trigger restart to pick a new proxy
             serviceScope.launch {
                 try { serverSocket?.close() } catch(e: Exception){}
-                LocalProxyState.isRunning.value = false
+                LocalProxyState.setRunning(false)
+                LocalProxyState.setCurrentProxy(null)
 
                 // Only switch if auto-switch is enabled
                 val app = application as MTProtoHub
@@ -271,7 +287,17 @@ class LocalProxyService : Service() {
     private fun stopRelay() {
         LocalProxyState.isRunning.value = false
         LocalProxyState.isPaused.value = false
-        try { serverSocket?.close() } catch(e: Exception) {}
+        LocalProxyState.setCurrentProxy(null)
+        try {
+            serverSocket?.let {
+                if (!it.isClosed) {
+                    it.close()
+                }
+            }
+            serverSocket = null
+        } catch (e: Exception) {
+            Timber.e(e, "Error while stopping relay")
+        }
         serviceScope.cancel()
         wakeLock?.let {
             if (it.isHeld) it.release()

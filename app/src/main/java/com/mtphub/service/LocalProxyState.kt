@@ -1,6 +1,8 @@
 package com.mtphub.service
 
+import com.mtphub.models.ProxyEntity
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import java.util.UUID
 
@@ -14,6 +16,8 @@ object LocalProxyState {
     val isRunning = MutableStateFlow(false)
     val isPaused = MutableStateFlow(false)
     val activeConnections = MutableStateFlow(0)
+    private val _currentProxy = MutableStateFlow<ProxyEntity?>(null)
+    val currentProxy: StateFlow<ProxyEntity?> = _currentProxy
     
     val connectedClients = MutableStateFlow<List<ClientConnection>>(emptyList())
 
@@ -28,4 +32,8 @@ object LocalProxyState {
         connectedClients.update { it.filter { c -> c.id != client.id } }
         activeConnections.update { maxOf(0, it - 1) }
     }
+
+
+    internal fun setCurrentProxy(proxy: ProxyEntity?) { _currentProxy.value = proxy }
+    internal fun setRunning(value: Boolean) { isRunning.value = value }
 }
