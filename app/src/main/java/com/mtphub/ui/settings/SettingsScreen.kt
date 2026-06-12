@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mtphub.ui.AppViewModel
 import com.mtphub.service.UpdateService.UpdatePreferences
+import com.mtphub.utils.DeviceSecret
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,7 +29,8 @@ fun SettingsScreen(viewModel: AppViewModel, onBack: () -> Unit) {
     var parallelChecks by remember(settings.parallelChecks) { mutableStateOf(settings.parallelChecks.toString()) }
     var interval by remember(settings.updateIntervalHours) { mutableStateOf(settings.updateIntervalHours.toString()) }
     var localPort by remember(settings.localProxyPort) { mutableStateOf(settings.localProxyPort.toString()) }
-
+    var autoDeviceSecret by remember(settings.useDeviceSecret) { mutableStateOf(settings.useDeviceSecret) }
+    var customSecret by remember(settings.customSecret) { mutableStateOf(settings.customSecret ?: "") }
     var autoSwitch by remember(settings.autoSwitchProxies) { mutableStateOf(settings.autoSwitchProxies) }
     var autoScan by remember(settings.autoScanEnabled) { mutableStateOf(settings.autoScanEnabled) }
 
@@ -60,7 +62,9 @@ fun SettingsScreen(viewModel: AppViewModel, onBack: () -> Unit) {
                             updateIntervalHours = interval.toIntOrNull() ?: 12,
                             localProxyPort = localPort.toIntOrNull() ?: 1080,
                             autoSwitchProxies = autoSwitch,
-                            autoScanEnabled = autoScan
+                            autoScanEnabled = autoScan,
+                            useDeviceSecret = autoDeviceSecret,
+                            customSecret = customSecret.takeIf { it.isNotBlank() }
                         )
                     )
                     onBack()
@@ -112,6 +116,25 @@ fun SettingsScreen(viewModel: AppViewModel, onBack: () -> Unit) {
                     }
                 )
 
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Auto-generate Device Secret")
+                Switch(checked = autoDeviceSecret, onCheckedChange = { autoDeviceSecret = it })
+            }
+
+            if (!autoDeviceSecret) {
+                OutlinedTextField(
+                    value = customSecret,
+                    onValueChange = { customSecret = it },
+                    label = { Text("Manual MTProto Secret") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
             }
 
             OutlinedTextField(

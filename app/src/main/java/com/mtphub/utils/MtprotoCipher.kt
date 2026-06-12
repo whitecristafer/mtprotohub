@@ -10,14 +10,17 @@ class MtprotoCipher(handshake64: ByteArray, secretHex: String, val isSrv: Boolea
     private val decryptCipher: Cipher
 
     init {
-        val secret = hexToBytes(secretHex.trim().removePrefix("ee")) // Remove the FakeTLS prefix if it exists
+        // Remove the FakeTLS prefix if it exists
+        val cleanSecret = secretHex.trim().removePrefix("ee")
+        val coreSecretHex = cleanSecret.take(32)
+        val secret = hexToBytes(coreSecretHex)
+
         val sha = MessageDigest.getInstance("SHA-256")
 
         // Extracting temporary keys from a 64-byte handshake
         val keyIv = ByteArray(48)
         System.arraycopy(handshake64, 8, keyIv, 0, 48)
 
-        // For the server and the client, the encryption directions are inverted
         val (encOffset, decOffset) = if (isSrv) Pair(0, 1) else Pair(1, 0)
 
         // Configuring the encryptor (Encrypt)
@@ -32,8 +35,7 @@ class MtprotoCipher(handshake64: ByteArray, secretHex: String, val isSrv: Boolea
         encryptCipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(encKey, "AES"), IvParameterSpec(encIv))
 
         // Configuring the decryptor (Decrypt)
-        // In real MTProto, reverse byte is used here, simplifying the logic for the stream:
-        val keyIvRev = keyIv.clone() // A full reverse requires the full obfs2 algorithm
+        val keyIvRev = keyIv.clone()
         sha.reset()
         sha.update(keyIvRev, 0, 32)
         sha.update(secret)
@@ -54,7 +56,8 @@ class MtprotoCipher(handshake64: ByteArray, secretHex: String, val isSrv: Boolea
     }
 
     private fun hexToBytes(hex: String): ByteArray {
-        val s = hex.replace("^[0-9a-fA-F]".toRegex(), "")
+        // REGEX: [^...] removes everything that is NOT a hex character
+        val s = hex.replace("[^0-9a-fA-F]".toRegex(), "")
         val len = s.length
         val data = ByteArray(len / 2)
         for (i in 0 until len step 2) {

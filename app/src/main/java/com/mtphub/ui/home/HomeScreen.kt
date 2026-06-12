@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mtphub.data.TelegramApp
 import com.mtphub.service.LocalProxyState
 import com.mtphub.ui.AppViewModel
+import com.mtphub.utils.DeviceSecret
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,6 +69,14 @@ fun HomeScreen(
     val isPaused by LocalProxyState.isPaused.collectAsStateWithLifecycle()
     val current = topWorking.firstOrNull()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+
+    val finalSecret = remember(settings.useDeviceSecret, settings.customSecret, current?.secret) {
+        when {
+            settings.useDeviceSecret -> DeviceSecret.get(context)
+            !settings.customSecret.isNullOrBlank() -> settings.customSecret
+            else -> current?.secret ?: ""
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -102,7 +112,7 @@ fun HomeScreen(
                         Button(
                             onClick = {
                                 val localUrl =
-                                    "tg://proxy?server=127.0.0.1&port=${settings.localProxyPort}&secret=${current.secret}"
+                                    "tg://proxy?server=127.0.0.1&port=${settings.localProxyPort}&secret=$finalSecret"
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(localUrl))
                                 runCatching { context.startActivity(intent) }
                                     .onFailure {
@@ -232,7 +242,7 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(onClick = {
                             val localUrl =
-                                "tg://proxy?server=127.0.0.1&port=${settings.localProxyPort}&secret=${current.secret}"
+                                "tg://proxy?server=127.0.0.1&port=${settings.localProxyPort}&secret=$finalSecret"
                             val clipboard =
                                 context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             clipboard.setPrimaryClip(ClipData.newPlainText("MTProto", localUrl))

@@ -17,7 +17,9 @@ data class AppSettings(
     val autoScanEnabled: Boolean = true,
     val localProxyPort: Int = 1080,
     val language: String = "system",
-    val lastRepoUpdate: Long = 0
+    val lastRepoUpdate: Long = 0,
+    val useDeviceSecret: Boolean = false,
+    val customSecret: String? = null
 )
 
 class SettingsRepository(context: Context) {
@@ -38,7 +40,9 @@ class SettingsRepository(context: Context) {
             autoScanEnabled = prefs.getBoolean("autoScanEnabled", true),
             localProxyPort = prefs.getInt("localProxyPort", 1080),
             language = prefs.getString("language", "system") ?: "system",
-            lastRepoUpdate = prefs.getLong("lastRepoUpdate", 0)
+            lastRepoUpdate = prefs.getLong("lastRepoUpdate", 0),
+            useDeviceSecret = prefs.getBoolean("useDeviceSecret", true),
+            customSecret = prefs.getString("customSecret", null)
         )
     }
 
@@ -55,6 +59,8 @@ class SettingsRepository(context: Context) {
             putInt("localProxyPort", newSettings.localProxyPort)
             putString("language", newSettings.language)
             putLong("lastRepoUpdate", newSettings.lastRepoUpdate)
+            putBoolean("useDeviceSecret", newSettings.useDeviceSecret)
+            putString("customSecret", newSettings.customSecret)
             apply()
         }
         _settings.value = newSettings
